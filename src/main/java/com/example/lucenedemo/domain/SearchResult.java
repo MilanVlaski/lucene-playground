@@ -49,11 +49,12 @@ public record SearchResult(
         int limit = Math.min(matches.size(), 5);
         for (int i = 0; i < limit; i++) {
             Email email = matches.get(i);
+            String subject = truncate(email.subject(), 50);
             sb.append(String.format("%d. %s -> %s: %s\n",
                 i + 1,
                 email.from(),
                 email.to(),
-                truncate(email.subject(), 50)
+                subject != null ? subject : ""
             ));
         }
         if (matches.size() > 5) {
@@ -64,7 +65,7 @@ public record SearchResult(
 
     private String truncate(String text, int maxLength) {
         if (text == null || text.length() <= maxLength) {
-            return text != null ? text : "";
+            return text;
         }
         return text.substring(0, maxLength - 3) + "...";
     }

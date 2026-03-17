@@ -14,7 +14,6 @@ import java.util.List;
 public class SqliteEmailRepository implements EmailRepository {
 
     private final Connection connection;
-    private boolean tableCreated = false;
 
     public SqliteEmailRepository() {
         try {
@@ -36,10 +35,6 @@ public class SqliteEmailRepository implements EmailRepository {
     }
 
     private void createTableIfNeeded() throws SQLException {
-        if (tableCreated) {
-            return;
-        }
-
         String sql = """
             CREATE TABLE IF NOT EXISTS emails (
                 id TEXT PRIMARY KEY,
@@ -63,7 +58,6 @@ public class SqliteEmailRepository implements EmailRepository {
 
             // Create index on generated search column
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_emails_search ON emails(search_text)");
-            tableCreated = true;
         }
     }
 

@@ -26,13 +26,9 @@ public interface SearchService extends AutoCloseable {
     void generateTestData(int count);
 
     /**
-     * Get statistics about current data
+     * Get total number of emails in the system
      */
-    DataStats getStats();
-
-    record DataStats(
-        long totalEmails
-    ) {}
+    long getStats();
 
     @Override
     void close();

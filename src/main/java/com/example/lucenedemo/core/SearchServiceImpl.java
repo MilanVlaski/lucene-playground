@@ -58,9 +58,8 @@ public class SearchServiceImpl implements SearchService {
     }
 
     @Override
-    public DataStats getStats() {
-        long totalEmails = databaseRepository.count();
-        return new DataStats(totalEmails);
+    public long getStats() {
+        return databaseRepository.count();
     }
 
     @Override

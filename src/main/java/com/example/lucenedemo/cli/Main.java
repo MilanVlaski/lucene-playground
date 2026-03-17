@@ -61,8 +61,8 @@ public class Main {
         int count = Integer.parseInt(args[1]);
         try (var service = createSearchService()) {
             service.generateTestData(count);
-            var stats = service.getStats();
-            System.out.printf("Generated %d emails. Total in system: %d\n", count, stats.totalEmails());
+            long totalEmails = service.getStats();
+            System.out.printf("Generated %d emails. Total in system: %d\n", count, totalEmails);
         }
     }
 
@@ -151,9 +151,9 @@ public class Main {
 
     private void handleStats() {
         try (var service = createSearchService()) {
-            var stats = service.getStats();
+            long totalEmails = service.getStats();
             System.out.println("=== System Statistics ===");
-            System.out.printf("Total emails: %d\n", stats.totalEmails());
+            System.out.printf("Total emails: %d\n", totalEmails);
         }
     }
 
@@ -162,13 +162,13 @@ public class Main {
 
         try (var service = createSearchService()) {
             // Generate test data if none exists
-            var stats = service.getStats();
-            if (stats.totalEmails() == 0) {
+            long totalEmails = service.getStats();
+            if (totalEmails == 0) {
                 System.out.println("Generating test data (100,000 emails)...");
                 service.generateTestData(100_000);
                 System.out.println("Data generation complete.\n");
             } else {
-                System.out.printf("Using existing dataset (%d emails)\n\n", stats.totalEmails());
+                System.out.printf("Using existing dataset (%d emails)\n\n", totalEmails);
             }
 
             System.out.println("1. Searching for 'john' (common name in email addresses):");

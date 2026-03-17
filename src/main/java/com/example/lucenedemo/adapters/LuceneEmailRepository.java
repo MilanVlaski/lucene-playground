@@ -6,6 +6,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -13,6 +14,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.apache.lucene.queryparser.classic.QueryParser.*;
 
 /**
  * Lucene implementation of EmailRepository.
@@ -107,61 +110,27 @@ public class LuceneEmailRepository implements EmailRepository {
         }
 
         try {
-            // Create a boolean query to search across multiple fields
-            BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
-
+            BooleanQuery.Builder builder = new BooleanQuery.Builder();
             String lowerQuery = queryText.toLowerCase();
 
-            // 1. Search in the combined search_text field using QueryParser
-            // This uses the analyzer and should find tokenized terms
-            org.apache.lucene.queryparser.classic.QueryParser queryParser =
-                new org.apache.lucene.queryparser.classic.QueryParser("search_text", analyzer);
-            queryParser.setDefaultOperator(org.apache.lucene.queryparser.classic.QueryParser.Operator.OR);
+            // Strategy 1: QueryParser on combined search_text field
+            // This covers most full-text search needs with proper tokenization
+            var queryParser = new QueryParser("search_text", analyzer);
+            queryParser.setDefaultOperator(Operator.OR);
 
             try {
                 Query parsedQuery = queryParser.parse(queryText);
-                booleanQuery.add(parsedQuery, BooleanClause.Occur.SHOULD);
+                builder.add(parsedQuery, BooleanClause.Occur.SHOULD);
             } catch (org.apache.lucene.queryparser.classic.ParseException e) {
-                // If parsing fails, try a simple term query
-                String analyzedTerm = analyzer.normalize("search_text", queryText).utf8ToString();
-                if (!analyzedTerm.isBlank()) {
-                    TermQuery fallbackQuery = new TermQuery(new Term("search_text", analyzedTerm));
-                    booleanQuery.add(fallbackQuery, BooleanClause.Occur.SHOULD);
-                }
+                // If parsing fails, skip this strategy and rely on wildcards
             }
 
-            // 2. Also try a phrase query for multi-word queries
-            if (queryText.contains(" ")) {
-                PhraseQuery phraseQuery = new PhraseQuery.Builder()
-                    .add(new Term("search_text", queryText.toLowerCase()))
-                    .build();
-                booleanQuery.add(phraseQuery, BooleanClause.Occur.SHOULD);
-            }
+            // Strategy 2: Wildcard queries for partial email address matching
+            // This allows "john" to match "john.smith@example.com"
+            builder.add(new WildcardQuery(new Term("from_lower", "*" + lowerQuery + "*")), BooleanClause.Occur.SHOULD);
+            builder.add(new WildcardQuery(new Term("to_lower", "*" + lowerQuery + "*")), BooleanClause.Occur.SHOULD);
 
-            // 3. Search in from and to fields (exact match on lowercase versions)
-            // This ensures we match email addresses like "john.smith@example.com"
-            TermQuery fromQuery = new TermQuery(new Term("from_lower", lowerQuery));
-            booleanQuery.add(fromQuery, BooleanClause.Occur.SHOULD);
-
-            TermQuery toQuery = new TermQuery(new Term("to_lower", lowerQuery));
-            booleanQuery.add(toQuery, BooleanClause.Occur.SHOULD);
-
-            // 4. Also try wildcard queries for partial matches in email addresses
-            // e.g., "john" should match "john.smith@example.com"
-            WildcardQuery fromWildcard = new WildcardQuery(new Term("from_lower", "*" + lowerQuery + "*"));
-            booleanQuery.add(fromWildcard, BooleanClause.Occur.SHOULD);
-
-            WildcardQuery toWildcard = new WildcardQuery(new Term("to_lower", "*" + lowerQuery + "*"));
-            booleanQuery.add(toWildcard, BooleanClause.Occur.SHOULD);
-
-            // 5. Search in subject and body fields too
-            WildcardQuery subjectWildcard = new WildcardQuery(new Term("subject", "*" + lowerQuery + "*"));
-            booleanQuery.add(subjectWildcard, BooleanClause.Occur.SHOULD);
-
-            WildcardQuery bodyWildcard = new WildcardQuery(new Term("body", "*" + lowerQuery + "*"));
-            booleanQuery.add(bodyWildcard, BooleanClause.Occur.SHOULD);
-
-            TopDocs topDocs = searcher.search(booleanQuery.build(), 1000);
+            TopDocs topDocs = searcher.search(builder.build(), 1000);
             return convertTopDocsToEmails(topDocs);
 
         } catch (IOException e) {

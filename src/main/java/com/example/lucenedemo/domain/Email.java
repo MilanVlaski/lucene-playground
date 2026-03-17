@@ -25,15 +25,4 @@ public record Email(
             timestamp = Instant.now();
         }
     }
-
-    public boolean containsText(String text) {
-        if (text == null || text.isBlank()) {
-            return false;
-        }
-        String searchText = text.toLowerCase();
-        return (subject != null && subject.toLowerCase().contains(searchText)) ||
-               (body != null && body.toLowerCase().contains(searchText)) ||
-               from.toLowerCase().contains(searchText) ||
-               to.toLowerCase().contains(searchText);
-    }
 }
