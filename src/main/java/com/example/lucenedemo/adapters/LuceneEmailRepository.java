@@ -128,12 +128,15 @@ public class LuceneEmailRepository implements EmailRepository {
 
             // Strategy 2: Wildcard queries for partial email address matching
             // This allows "john" to match "john.smith@example.com"
-            builder.add(new WildcardQuery(new Term("from_lower", "*" + escapedLowerQuery + "*")), BooleanClause.Occur.SHOULD);
-            builder.add(new WildcardQuery(new Term("to_lower", "*" + escapedLowerQuery + "*")), BooleanClause.Occur.SHOULD);
+            builder.add(new WildcardQuery(new Term("from_lower",
+                "*" + escapedLowerQuery + "*")), BooleanClause.Occur.SHOULD);
+            builder.add(new WildcardQuery(new Term("to_lower",
+                "*" + escapedLowerQuery + "*")), BooleanClause.Occur.SHOULD);
 
             // Strategy 3: Wildcard on combined search field for substring matching within tokens
             // Note: Leading wildcards are expensive; this is acceptable for demo purposes
-            builder.add(new WildcardQuery(new Term("search_text", "*" + escapedLowerQuery + "*")), BooleanClause.Occur.SHOULD);
+            builder.add(new WildcardQuery(new Term("search_text",
+                "*" + escapedLowerQuery + "*")), BooleanClause.Occur.SHOULD);
 
             TopDocs topDocs = searcher.search(builder.build(), 1000);
             return convertTopDocsToEmails(topDocs);
