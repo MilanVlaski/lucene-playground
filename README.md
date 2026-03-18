@@ -1,4 +1,4 @@
-# Lucene Speed Demo
+# Lucene Playground
 
 A minimalist Java application demonstrating Apache Lucene's performance advantages over traditional database full-text search (SQLite with LIKE queries).
 
