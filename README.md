@@ -9,68 +9,24 @@ This project showcases three key Lucene production properties:
 - **Near real-time indexing**: Changes become searchable almost immediately
 - **Safe deployment**: Proper resource management and clean architecture
 
-## Phase 1 Features
-
-The complete demo includes these commands:
-
-| Command | Description |
-|---------|-------------|
-| `generate <count>` | Generate test emails (e.g., `generate 100000`) |
-| `search-db <query>` | Search using SQLite (LIKE %query%) |
-| `search-lucene <query>` | Search using Lucene (QueryParser + wildcards) |
-| `compare <query>` | Compare search performance side-by-side |
-| `stats` | Show total email count |
-| `demo` | Run complete demo with multiple queries |
-
-**Example:** `./run.sh demo` generates 100k emails and runs 4 comparison searches.
-
-## Architecture
-
-This project follows **hexagonal (ports & adapters) architecture**:
-
-```
-cli/Main
-    ↓ (uses)
-ports/SearchService (API)
-    ↓ (orchestrates)
-core/SearchServiceImpl
-    ↓ (delegates to)
-adapters/ (LuceneEmailRepository, SqliteEmailRepository)
-    ↓ (maps to)
-domain/ (Email, SearchResult)
-```
-
-The core business logic has zero framework dependencies and can be tested independently.
-
 ## Build & Run
 
 **Prerequisites:**
 - Java 17+
 - Maven 3.6+
 
-**Build:**
-```bash
-mvn clean package
-```
-
-**Run demo:**
-```bash
-./run.sh demo
-```
-
-**Generate data:**
-```bash
-./run.sh generate 100000
-```
-
-**Compare searches:**
-```bash
-./run.sh compare john
+**Run the console app:**
+```shell
+  ./run.sh
 ```
 
 ## Implementation Notes
 
-- **Search strategy**: Lucene uses QueryParser on a combined `search_text` field plus wildcard queries for partial email address matching
+- **Search strategy**: Lucene uses a three-pronged approach:
+  1. QueryParser on combined `search_text` field for token-based matching
+  2. Wildcard queries on `from_lower`/`to_lower` for partial email address matching
+  3. Wildcard query on `search_text` for substring matching within tokens (e.g., "mat" → "matter")
+- **Input safety**: All wildcard queries escape special characters (`*`, `?`, `[`, `]`, `\`) to prevent parsing errors
 - **Data storage**: In-memory SQLite and Lucene's `ByteBuffersDirectory` for demo simplicity
 - **Performance measurement**: Warm-up phase + average over 3 iterations
 - **Resource cleanup**: AutoCloseable pattern ensures proper cleanup of database connections and Lucene resources
