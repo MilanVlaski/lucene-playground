@@ -7,7 +7,7 @@ import java.util.List;
  * Driven port (SPI) for email storage and retrieval.
  * Implemented by adapters (Lucene, SQLite, etc.)
  */
-public interface EmailRepository {
+public interface EmailRepository extends AutoCloseable {
 
     /**
      * Save an email to the repository
